@@ -14,6 +14,7 @@ var Board = makeClass();
 Board.prototype.init = function(canvas) {
   this.canvas = canvas;
   this.ctx = canvas.getContext('2d');
+  this.ourTurn = globals.role == 'w';
 
   this.board = Array(this.config.numRows);
   for(var r = 0; r < this.config.numRows; r++) {
@@ -46,10 +47,47 @@ Board.prototype.onClick = function(e) {
       }
     }
   }
-  sendMove({r: p.r, c: p.c, player: globals.role });
-  this.board[p.r][p.c] = globals.role;
+  if (this.ourTurn && this.legalMove(p.r, p.c, globals.role)) {
+    sendMove({r: p.r, c: p.c, player: globals.role });
+    this.board[p.r][p.c] = globals.role;
+    this.ourTurn = false;
+  }
   this.draw();
 }
+
+Board.prototype.toIndex = function(r, c) {
+  return r*this.config.numColumns + c;
+};
+
+Board.prototype.legalMove = function(r, c, colour) {
+  // Check to make sure we don't hit an occupied square.
+  if (this.board[r][c] != ' ') { return false; }
+  // check for suicide.
+  var liberties = 0;
+  var unvisited = [{'r':r, 'c':c}];
+  var visited = {};
+  while(unvisited.length) {
+    np = unvisited.pop();
+    visited[this.toIndex(np.r, np.c)] = 1;
+    // NORTH
+    if (this.board[np.r-1][np.c] == ' ') liberties++;
+    else if (this.board[np.r-1][np.c] == colour && !visited[this.toIndex(np.r-1, np.c)])
+      unvisited.push({'r':np.r-1,'c':np.c});
+    // WEST
+    if (this.board[np.r][np.c-1] == ' ') liberties++;
+    else if (this.board[np.r][np.c-1] == colour && !visited[this.toIndex(np.r, np.c-1)])
+      unvisited.push({'r':np.r,'c':np.c-1});
+    // SOUTH
+    if (this.board[np.r+1][np.c] == ' ') liberties++;
+    else if (this.board[np.r+1][np.c] == colour && !visited[this.toIndex(np.r+1, np.c)])
+      unvisited.push({'r':np.r+1,'c':np.c});
+    // EAST
+    if (this.board[np.r][np.c+1] == ' ') liberties++;
+    else if (this.board[np.r][np.c+1] == colour && !visited[this.toIndex(np.r, np.c+1)])
+      unvisited.push({'r':np.r,'c':np.c+1});
+  }
+  return !!liberties;
+};
 
 Board.prototype.config = {
   xpad: 0.03,
@@ -131,12 +169,5 @@ Board.prototype.draw = function() {
     }
   }
 }
-
-Board.prototype.doMove = function(move) {
-  this.board[move.r][move.c] = move.player;
-  this.draw();
-}
-
-
 
 function sendMove() {}
