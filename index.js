@@ -7,7 +7,7 @@ var redis = exports.redis = require('redis').createClient();
 var util = require('util');
 var mu = exports.mu = require('mu2');
 var app = exports.app = express();
-var config = require('./config');
+var config = exports.config = require('./config');
 
 app.use(express.static(__dirname + '/static'));
 app.use(express.bodyParser());

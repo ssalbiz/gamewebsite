@@ -1,4 +1,5 @@
 module.exports = {
+  host: 'csc.uwaterloo.ca',
   cookieSecret: 'lalalalala',
   port: 54322,
   redis: {

@@ -8,7 +8,7 @@ exports.init = function() {
 function loginHandler(req, res) {
   var data = JSON.stringify({
     'assertion': req.param('assertion', null),
-    'audience': 'csc.uwaterloo.ca:12345'
+    'audience': server.config.host + ':' + server.config.port,
   });
 
   var options = {
