@@ -4,5 +4,5 @@ if [ "$1" = "clean" ]
 then
   make clean
 fi
-killall redis-server
+killall -q redis-server
 redis-server redis.conf &
