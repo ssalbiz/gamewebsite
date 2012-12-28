@@ -1,4 +1,4 @@
 clean:
-	rm appendonly.aof
-	rm dump.rdb
-	rm redis.log
+	rm -f appendonly.aof
+	rm -f dump.rdb
+	rm -f redis.log
