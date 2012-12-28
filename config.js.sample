@@ -1,0 +1,8 @@
+module.exports = {
+  cookieSecret: 'lalalalala',
+  port: 54322,
+  redis: {
+    host: 'localhost',
+    port: 6379
+  }
+};

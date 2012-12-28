@@ -1,0 +1,128 @@
+<!doctype HTML>
+<title>{{ title }}</title>
+<meta charset="utf-8">
+<link href="/css/bootstrap.min.css" rel="stylesheet" media="screen">
+<script src="http://code.jquery.com/jquery.min.js"></script>
+<style>
+  body {
+    padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
+  }
+</style>
+
+<div class="navbar navbar-inverse navbar-fixed-top">
+  <div class="navbar-inner">
+    <div class="container">
+      <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </a>
+      <a class="brand" href="#">Project name</a>
+      <div class="nav-collapse collapse">
+        <ul class="nav pull-left">
+          <li class="active"><a href="#">Home</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+        <ul class="nav pull-right">
+          <li><a class="" href="#" onclick="navigator.id.request();" id="signInBtn">Sign in</a></li>
+          <li class="dropdown">
+            <a href="#" id="userDropDown" role="button" class="dropdown-toggle" data-toggle="dropdown"></a>
+            <ul class="dropdown-menu" role="menu">
+              <li><a tabindex="-1" href="#">Profile</a></li>
+              <li class="divider"></li>
+              <li><a tabindex="-1" href="#" onclick="navigator.id.logout();">Sign out</a></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  {{{ contents }}}
+</div>
+
+<div id="NewUserModal" class="modal hide fade" tabindex="-1" role="dialog">
+  <div class="modal-header">
+    <h3>Welcome!</h3>
+  </div>
+
+  <div class="modal-body">
+    <p>You are a new user! What is your name?</p>
+    <input id="newUserName" type="text" class="span2">
+  <div>
+
+  <div class="modal-footer">
+    <button onclick="setUserName()" class="btn btn-primary" data-dismiss="modal">Save</button>
+  </div>
+</div>
+
+<script src="https://login.persona.org/include.js"></script>
+<script src="/js/bootstrap.min.js"></script>
+<script>
+  var globals = globals || {};
+  var server = server || {};
+  server.user = {{{ user }}};
+
+  if(server.user == null) {
+    logoutUI();
+  } else {
+    loginUI();
+  }
+  navigator.id.watch({
+    loggedInUser: server.user ? server.user.email : null,
+    onlogin: function(assertion) {
+      $.ajax({
+        type: 'POST',
+        url: '/auth/login',
+        data: { assertion: assertion },
+        success: function(res, status, xhr) {
+          if(res.new) {
+            server.user = res.user;
+            console.log('new user!');
+            $('#NewUserModal').modal({ keyboard: false });
+          } else {
+            server.user = res;
+          }
+          loginUI();
+        },
+        error: function(xhr, status, err) { console.log('Login failure: ' + err); }
+      });
+    },
+    onlogout: function() {
+      $.ajax({
+        type: 'POST',
+        url: '/auth/logout',
+        success: function(res, status, xhr) { logoutUI(); },
+        error: function(xhr, status, err) { console.log('Logout failure: ' + err); }
+      });
+    }
+  });
+
+  function setUserName() {
+    server.user.name = $('#newUserName').val();
+    $.ajax({
+      type: 'POST',
+      url: '/user',
+      data: { name: server.user.name },
+      success: function() {
+        loginUI();
+      }
+    });
+  }
+
+  function logoutUI() {
+    $('#userDropDown').hide();
+    $('#signInBtn').show();
+    if(typeof logoutUI2 !== 'undefined') logoutUI2();
+  }
+
+  function loginUI() {
+    $('#signInBtn').hide();
+    document.getElementById('userDropDown').innerHTML = server.user.name;
+    $('#userDropDown').show();
+    if(typeof loginUI2 !== 'undefined') loginUI2();
+  }
+</script>

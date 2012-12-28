@@ -1,0 +1,120 @@
+<script src="/js/go/client.js"></script>
+
+<style>
+  /* TODO: move this elsewhere */
+
+canvas.goBoard {
+  background: #FFF;
+  margin-top: 1.25em;
+}
+
+table.playerStats {
+  width: 100%;
+}
+
+.btn-black {
+  background-color: hsl(0, 0%, 16%) !important;
+  background-repeat: repeat-x;
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#5b5b5b", endColorstr="#282828");
+  background-image: -khtml-gradient(linear, left top, left bottom, from(#5b5b5b), to(#282828));
+  background-image: -moz-linear-gradient(top, #5b5b5b, #282828);
+  background-image: -ms-linear-gradient(top, #5b5b5b, #282828);
+  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #5b5b5b), color-stop(100%, #282828));
+  background-image: -webkit-linear-gradient(top, #5b5b5b, #282828);
+  background-image: -o-linear-gradient(top, #5b5b5b, #282828);
+  background-image: linear-gradient(#5b5b5b, #282828);
+  border-color: #282828 #282828 hsl(0, 0%, 89.5%);
+  color: #fff !important;
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.33);
+  -webkit-font-smoothing: antialiased;
+  min-width: 24em;
+  max-width: 24em;
+}
+
+.btn-white {
+  background-color: hsl(0, 0%, 93%) !important;
+  background-repeat: repeat-x;
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#110110110", endColorstr="#ededed");
+  background-image: -khtml-gradient(linear, left top, left bottom, from(#110110110), to(#ededed));
+  background-image: -moz-linear-gradient(top, #110110110, #ededed);
+  background-image: -ms-linear-gradient(top, #110110110, #ededed);
+  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #110110110), color-stop(100%, #ededed));
+  background-image: -webkit-linear-gradient(top, #110110110, #ededed);
+  background-image: -o-linear-gradient(top, #110110110, #ededed);
+  background-image: linear-gradient(#110110110, #ededed);
+  border-color: #ededed #ededed hsl(0, 0%, 89.5%);
+  color: #333 !important;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.23);
+  -webkit-font-smoothing: antialiased;
+  min-width: 24em;
+  max-width: 24em;
+}
+
+.full {
+  margin: 0 auto !important;
+  float: none !important;
+  text-align: center;
+  width: 960px;
+}
+
+</style>
+<script>
+  var server = server || {};
+  server.game = {{{ game }}}
+
+  function loginUI2() {
+    $('#whiteBtn').html(server.game.white.uid == server.user.uid ? 'Me' : server.game.white.name);
+    $('#blackBtn').html(server.game.black.uid == server.user.uid ? 'Me' : server.game.black.name);
+    globals.role = server.game.white.uid == server.user.uid ? 'w' :
+                   server.game.black.uid == server.user.uid ? 'b' : 's';
+    installPlayerPopovers();
+  }
+  function logoutUI2() {
+    $('#whiteBtn').html(server.game.white.name);
+    $('#blackBtn').html(server.game.black.name);
+    globals.role = 's';
+    installPlayerPopovers();
+  }
+
+  function makePlayerTable(user) {
+    return '<table class="playerStats">' +
+             '<tr><td>Rank</td><td>' + user.go.egf + '</td></tr>' +
+             '<tr><td>Games played</td><td>' + user.go.gamesPlayed + '</td></tr>' +
+           '</table>';
+  }
+
+  function installPlayerPopovers() {
+    $('#whiteBtn').popover({
+      title: server.game.white.name,
+      content: makePlayerTable(server.game.white),
+      html: true,
+      trigger: 'hover',
+      placement: 'bottom'
+    });
+    $('#blackBtn').popover({
+      title: server.game.black.name,
+      content: makePlayerTable(server.game.black),
+      html: true,
+      trigger: 'hover',
+      placement: 'bottom'
+    });
+  }
+</script>
+
+<ul class="inline full">
+  <li><button class="btn btn-white" type="button" id="whiteBtn"></button></li>
+  <li>vs.</li>
+  <li><button class="btn btn-black" type="button" id="blackBtn"></button></li>
+</ul>
+
+
+<canvas class="goBoard" width="960" height="960" id="board">Canvas not supported</canvas>
+
+<script>
+  $(document).ready(init);
+
+  function init() {
+    globals.board = new Board(document.getElementById('board'));
+    globals.board.draw();
+  }
+</script>
