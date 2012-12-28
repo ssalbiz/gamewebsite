@@ -37,6 +37,9 @@ function createGameHandler(req, res) {
 
   server.users.getUserFromUID(uid, function(e, user) {
     if(e) {
+      server.unexpected(res, 'create game handler', 'could not get user from uid: ' + e.message);
+    } if(user == null) {
+      res.writeHead(400, {'Content-Type': 'text/plain'});
       res.end('Bad opponent uid.');
     } else {
       createGame(req.session.user, user, res);
