@@ -1,0 +1,6 @@
+#!/bin/bash
+if [ "$1" = "clean" ]
+then
+  make clean
+fi
+redis-server redis.conf &

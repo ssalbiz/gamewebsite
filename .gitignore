@@ -1,2 +1,6 @@
 node_modules/
 config.js
+redis/redis.conf
+redis/appendonly.aof
+redis/dump.rdb
+redis/redis.log
