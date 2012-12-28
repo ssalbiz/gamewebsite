@@ -1,4 +1,9 @@
-var server = require('../');
+/*
+    Purpose: the http component of the Go game
+ */
+
+var server = require('../../');
+var core = require('./core');
 
 exports.init = function() {
   server.app.get(/^\/go\/creategame\/([0-9]+)$/, createGameHandler);
