@@ -3,6 +3,7 @@ var express = require('express');
 var http = exports.http = require('http');
 var https = exports.https = require('https');
 var RedisStore = require('connect-redis')(express);
+var redis = exports.redis = require('redis').createClient();
 var util = require('util');
 var mu = exports.mu = require('mu2');
 var app = exports.app = express();
@@ -17,6 +18,7 @@ app.use(express.session({
   store: new RedisStore({
     host: config.redis.host,
     port: config.redis.port,
+    client: redis
   })
 }));
 
