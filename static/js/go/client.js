@@ -14,7 +14,7 @@ var Board = makeClass();
 Board.prototype.init = function(canvas) {
   this.canvas = canvas;
   this.ctx = canvas.getContext('2d');
-  this.ourTurn = globals.role == 'w';
+  this.ourTurn = (globals.role == 'w');
 
   this.board = Array(this.config.numRows);
   for(var r = 0; r < this.config.numRows; r++) {
@@ -51,6 +51,8 @@ Board.prototype.onClick = function(e) {
     sendMove({r: p.r, c: p.c, player: globals.role });
     this.board[p.r][p.c] = globals.role;
     this.ourTurn = false;
+  } else {
+    console.log("illegal move!");
   }
   this.draw();
 }
@@ -70,17 +72,21 @@ Board.prototype.legalMove = function(r, c, colour) {
     np = unvisited.pop();
     visited[this.toIndex(np.r, np.c)] = 1;
     // NORTH
-    if (this.board[np.r-1][np.c] == ' ') liberties++;
-    else if (this.board[np.r-1][np.c] == colour && !visited[this.toIndex(np.r-1, np.c)])
-      unvisited.push({'r':np.r-1,'c':np.c});
+    if (this.board[np.r-1]) {
+      if (this.board[np.r-1][np.c] == ' ') liberties++;
+      else if (this.board[np.r-1][np.c] == colour && !visited[this.toIndex(np.r-1, np.c)])
+        unvisited.push({'r':np.r-1,'c':np.c});
+    }
     // WEST
     if (this.board[np.r][np.c-1] == ' ') liberties++;
     else if (this.board[np.r][np.c-1] == colour && !visited[this.toIndex(np.r, np.c-1)])
       unvisited.push({'r':np.r,'c':np.c-1});
     // SOUTH
-    if (this.board[np.r+1][np.c] == ' ') liberties++;
-    else if (this.board[np.r+1][np.c] == colour && !visited[this.toIndex(np.r+1, np.c)])
-      unvisited.push({'r':np.r+1,'c':np.c});
+    if (this.board[np.r+1]) {
+      if (this.board[np.r+1][np.c] == ' ') liberties++;
+      else if (this.board[np.r+1][np.c] == colour && !visited[this.toIndex(np.r+1, np.c)])
+        unvisited.push({'r':np.r+1,'c':np.c});
+    }
     // EAST
     if (this.board[np.r][np.c+1] == ' ') liberties++;
     else if (this.board[np.r][np.c+1] == colour && !visited[this.toIndex(np.r, np.c+1)])
