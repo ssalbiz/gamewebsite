@@ -51,7 +51,7 @@ function userProfileHandler(req, res) {
   var contents = '';
   var name = '';
   var uid = req.params[0];
-  getUserFromUID(uid, function(e, user) {
+  server.users.getUserFromUID(uid, function(e, user) {
     if(e) {
       server.unexpected(res, 'getting user profile', 'failed to get user profile: ' + e.message);
       return;

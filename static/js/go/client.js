@@ -14,15 +14,8 @@ var Board = makeClass();
 Board.prototype.init = function(canvas) {
   this.canvas = canvas;
   this.ctx = canvas.getContext('2d');
-  this.ourTurn = (globals.role == 'w');
 
-  this.board = Array(this.config.numRows);
-  for(var r = 0; r < this.config.numRows; r++) {
-    this.board[r] = new Array(this.config.numColumns);
-    for(var c = 0; c < this.config.numColumns; c++) {
-      this.board[r][c] = ' ';
-    }
-  }
+  this.board = Array(this.config.numRows * this.config.numColumns + 1).join(' ').split('');
 
   canvas.addEventListener('click', this.onClick.bind(this), false);
 }
@@ -47,14 +40,13 @@ Board.prototype.onClick = function(e) {
       }
     }
   }
-  if (this.ourTurn && this.legalMove(p.r, p.c, globals.role)) {
-    sendMove({r: p.r, c: p.c, role: globals.role });
-    this.board[p.r][p.c] = globals.role;
-    this.ourTurn = false;
+  if(globals.turn == globals.role && this.legalMove(p.r, p.c, globals.role)) {
+    var move = {r: p.r, c: p.c, role: globals.role };
+    sendMove(move);
+    this.doMove(move);
   } else {
     console.log("illegal move!");
   }
-  this.draw();
 }
 
 Board.prototype.toIndex = function(r, c) {
@@ -63,7 +55,7 @@ Board.prototype.toIndex = function(r, c) {
 
 Board.prototype.legalMove = function(r, c, colour) {
   // Check to make sure we don't hit an occupied square.
-  if (this.board[r][c] != ' ') { return false; }
+  if(this.getPiece(r, c) != ' ') { return false; }
   // check for suicide.
   var liberties = 0;
   var unvisited = [{'r':r, 'c':c}];
@@ -71,26 +63,35 @@ Board.prototype.legalMove = function(r, c, colour) {
   while(unvisited.length) {
     np = unvisited.pop();
     visited[this.toIndex(np.r, np.c)] = 1;
-    // NORTH
-    if (this.board[np.r-1]) {
-      if (this.board[np.r-1][np.c] == ' ') liberties++;
-      else if (this.board[np.r-1][np.c] == colour && !visited[this.toIndex(np.r-1, np.c)])
-        unvisited.push({'r':np.r-1,'c':np.c});
+
+    var north = this.getPiece(np.r - 1, np.c);
+    var south = this.getPiece(np.r + 1, np.c);
+    var west = this.getPiece(np.r, np.c - 1);
+    var east = this.getPiece(np.r, np.c + 1);
+
+    if(north == ' ') {
+      liberties++;
+    } else if(north == colour && !visited[this.toIndex(np.r-1, np.c)]) {
+      unvisited.push({'r': np.r-1, 'c': np.c});
     }
-    // WEST
-    if (this.board[np.r][np.c-1] == ' ') liberties++;
-    else if (this.board[np.r][np.c-1] == colour && !visited[this.toIndex(np.r, np.c-1)])
-      unvisited.push({'r':np.r,'c':np.c-1});
-    // SOUTH
-    if (this.board[np.r+1]) {
-      if (this.board[np.r+1][np.c] == ' ') liberties++;
-      else if (this.board[np.r+1][np.c] == colour && !visited[this.toIndex(np.r+1, np.c)])
-        unvisited.push({'r':np.r+1,'c':np.c});
+
+    if(west == ' ') {
+      liberties++;
+    } else if(west == colour && !visited[this.toIndex(np.r, np.c-1)]) {
+      unvisited.push({'r': np.r, 'c': np.c - 1});
     }
-    // EAST
-    if (this.board[np.r][np.c+1] == ' ') liberties++;
-    else if (this.board[np.r][np.c+1] == colour && !visited[this.toIndex(np.r, np.c+1)])
+
+    if(south == ' ') {
+      liberties++;
+    } else if(south && !visited[this.toIndex(np.r+1, np.c)]) {
+      unvisited.push({'r': np.r + 1, 'c': np.c});
+    }
+
+    if(east == ' ') {
+      liberties++;
+    } else if(east == colour && !visited[this.toIndex(np.r, np.c+1)]) {
       unvisited.push({'r':np.r,'c':np.c+1});
+    }
   }
   return !!liberties;
 };
@@ -103,8 +104,8 @@ Board.prototype.config = {
   guideDots: [[3,3], [15, 3], [3, 15], [15, 15], [3, 9], [9, 3], [9, 9], [9, 15], [15, 9]],
   guideDotRadius: 4,
   bgColour: "#E6E19C",
-  blackColour: "#000000",
-  whiteColour: "#FFFFFF",
+  blackColour: "#111",
+  whiteColour: "#EEE",
   stoneRadius: 0.4,
 };
 
@@ -159,13 +160,12 @@ Board.prototype.draw = function() {
   var rad = config.stoneRadius/(config.numColumns - 1)*(canvas.width - 2*xpad);
   for(var r = 0; r < config.numRows; r++) {
     for(var c = 0; c < config.numColumns; c++) {
-      switch(board[r][c]) {
+      switch(this.getPiece(r, c)) {
         case ' ': continue;
         case 'w': ctx.fillStyle = config.whiteColour; break;
         case 'b': ctx.fillStyle = config.blackColour; break;
         default:
-          console.log('error: board[' + r + '][' + c + '] = "' + board[r][c] + '"');
-          board[r][c] = ' ';
+          this.doMove({r: r, c: c, role: ' '});
           continue;
       }
       var pos = this.getDrawPos(r, c);
@@ -176,7 +176,12 @@ Board.prototype.draw = function() {
   }
 }
 
+Board.prototype.getPiece = function(r, c) {
+  if(r >= this.config.numRows || c >= this.config.numColumns || r < 0 || c < 0) return undefined;
+  return this.board[r*this.config.numColumns + c];
+}
+
 Board.prototype.doMove = function(move) {
-  this.board[move.r][move.c] = move.role;
+  this.board[move.r*this.config.numColumns + move.c] = move.role;
   this.draw();
 }

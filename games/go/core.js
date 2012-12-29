@@ -36,7 +36,8 @@ function handleAuth(socket) { return function(data) {
 
       if(session) socket.set('cookie', data.cookie);
       socket.emit('authok', {
-        // TODO send game state
+        board: game.board,
+        turn: game.turn
       });
       socket.join('go:game:' + data.gid);
       socket.set('gid', data.gid);
@@ -54,8 +55,19 @@ function handleMove(socket) { return function(data) {
       if(e || typeof gid != 'string') {
         socket.disconnect('socket is missing gid - what?');
       } else {
-        // TODO is this move cool?
-        socket.broadcast.to('go:game:' + gid).emit('move', data);
+        server.redis.get('go:game:' + gid, function(e, game) {
+          if(e) {
+            socket.disconnect('couldn;t get game - what?');
+          } else if(game == null) {
+            socket.disconnect('game was null - what?');
+          } else {
+            game = JSON.parse(game);
+            game.board[19*data.r + data.c] = data.role; // TODO lol
+            game.turn = data.role == 'w' ? 'b': 'w'; // TODO lolx2
+            server.writeDB('go:game:' + gid, game);
+            socket.broadcast.to('go:game:' + gid).emit('move', data);
+          }
+        });
       }
     });
   });

@@ -19,6 +19,8 @@ function createGame(white, black, res) {
     } else {
       server.writeDB('go:game:' + gid, {
         white: white,
+        board: new Array(19*19 + 1).join(' ').split(''),
+        turn: 'b',
         black: black
       });
       res.writeHead(302, {'Location': '/go/' + gid});
