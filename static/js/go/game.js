@@ -104,7 +104,10 @@ Board.prototype.config = {
   guideDots: [[3,3], [15, 3], [3, 15], [15, 15], [3, 9], [9, 3], [9, 9], [9, 15], [15, 9]],
   guideDotRadius: 4,
   bgColour: "#E6E19C",
-  blackColour: "#111",
+  bgColourAlt: "#E1DD99",
+  stripeStep: 2,
+  lineColour: "#111",
+  blackColour: "#333",
   whiteColour: "#EEE",
   stoneRadius: 0.4,
 };
@@ -128,22 +131,33 @@ Board.prototype.draw = function() {
   ctx.rect(0, 0, canvas.width, canvas.height);
   ctx.fill();
 
+  ctx.beginPath();
+  ctx.lineWidth = config.stripeStep;
+  ctx.strokeStyle = config.bgColourAlt;
+  for(var x = 0; x < canvas.width; x += 2*config.stripeStep) {
+    ctx.moveTo(x+0.5, 0);
+    ctx.lineTo(x+0.5, canvas.height);
+  }
+  ctx.stroke();
+
+
   // Vertical
   var xpad = config.xpad * canvas.width;
   var ypad = config.ypad * canvas.height;
-  ctx.strokeStyle = config.blackColour;
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = config.lineColour;
   ctx.beginPath();
   for(var x = 0; x < config.numColumns; x++) {
-    var px = xpad + x/(config.numColumns - 1)*(canvas.width - 2*xpad);
-    ctx.moveTo(px, ypad);
-    ctx.lineTo(px, canvas.height - ypad);
+    var px = xpad + Math.floor(x/(config.numColumns - 1)*(canvas.width - 2*xpad));
+    ctx.moveTo(px+0.5, ypad);
+    ctx.lineTo(px+0.5, canvas.height - ypad);
   }
 
   // Horizontal
   for(var y = 0; y < config.numRows; y++) {
-    var py = ypad + y/(config.numRows - 1)*(canvas.height - 2*ypad);
-    ctx.moveTo(xpad, py);
-    ctx.lineTo(canvas.width - xpad, py);
+    var py = ypad + Math.floor(y/(config.numRows - 1)*(canvas.height - 2*ypad));
+    ctx.moveTo(xpad, py+0.5);
+    ctx.lineTo(canvas.width - xpad, py+0.5);
   }
   ctx.stroke();
 
@@ -191,20 +205,18 @@ Board.prototype.doMove = function(move) {
 /**********/
 
 function loginUI2() {
-  $('#whiteBtn').html(server.game.white.uid == server.user.uid ? 'Me' : server.game.white.name);
-  $('#blackBtn').html(server.game.black.uid == server.user.uid ? 'Me' : server.game.black.name);
   globals.role = server.game.white.uid == server.user.uid ? 'w' :
                  server.game.black.uid == server.user.uid ? 'b' : 's';
   installPlayerPopovers();
   doAuth();
+  playerBadgeUI();
 }
 
 function logoutUI2() {
-  $('#whiteBtn').html(server.game.white.name);
-  $('#blackBtn').html(server.game.black.name);
   globals.role = 's';
   doAuth();
   installPlayerPopovers();
+  playerBadgeUI();
 }
 
 function makePlayerTable(user) {
@@ -251,6 +263,21 @@ function doAuth() {
   globals.socket.emit('auth', reg);
 }
 
+function playerBadgeUI() {
+  var blackLabel = '';
+  var whiteLabel = '';
+  if(globals.turn) {
+    if(globals.turn == 'w') {
+      whiteLabel += '<i class="icon-star"></i> ';
+    } else {
+      blackLabel += '<i class="icon-star"></i> ';
+    }
+  }
+  whiteLabel += globals.role == 'w'? 'Me' : server.game.white.name;
+  blackLabel += globals.role == 'b'? 'Me' : server.game.black.name;
+  $('#whiteBtn').html(whiteLabel);
+  $('#blackBtn').html(blackLabel);
+}
 
 function init() {
   globals.board = new Board(document.getElementById('board'));
@@ -261,11 +288,13 @@ function init() {
   globals.socket.on('move', function(data) {
     globals.turn = data.role == 'w' ? 'b' : 'w';
     globals.board.doMove(data);
+    playerBadgeUI();
   });
   globals.socket.on('authok', function(data) {
     globals.board.board = data.board;
     globals.turn = data.turn;
     globals.board.draw();
+    playerBadgeUI();
   });
   doAuth();
 }
@@ -273,4 +302,5 @@ function init() {
 function sendMove(move) {
   globals.turn = globals.turn == 'w' ? 'b' : 'w';
   globals.socket.emit('move', move);
+  playerBadgeUI();
 }
