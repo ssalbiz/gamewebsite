@@ -1,7 +1,7 @@
 all:
 
 getdeps:
-	npm install websocket
+	npm install socket.io
 	npm install express
 	npm install mu2
 	npm install redis

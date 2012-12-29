@@ -46,7 +46,7 @@ Board.prototype.onClick = function(e) {
       }
     }
   }
-  sendMove({r: p.r, c: p.c, player: globals.role });
+  sendMove({r: p.r, c: p.c, role: globals.role });
   this.board[p.r][p.c] = globals.role;
   this.draw();
 }
@@ -133,10 +133,6 @@ Board.prototype.draw = function() {
 }
 
 Board.prototype.doMove = function(move) {
-  this.board[move.r][move.c] = move.player;
+  this.board[move.r][move.c] = move.role;
   this.draw();
 }
-
-
-
-function sendMove() {}

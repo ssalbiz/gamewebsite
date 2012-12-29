@@ -1,4 +1,5 @@
 <script src="/js/go/client.js"></script>
+<script src="{{{ socketHost }}}/socket.io/socket.io.js"></script>
 
 <style>
   /* TODO: move this elsewhere */
@@ -68,11 +69,13 @@ table.playerStats {
     globals.role = server.game.white.uid == server.user.uid ? 'w' :
                    server.game.black.uid == server.user.uid ? 'b' : 's';
     installPlayerPopovers();
+    doAuth();
   }
   function logoutUI2() {
     $('#whiteBtn').html(server.game.white.name);
     $('#blackBtn').html(server.game.black.name);
     globals.role = 's';
+    doAuth();
     installPlayerPopovers();
   }
 
@@ -113,8 +116,32 @@ table.playerStats {
 <script>
   $(document).ready(init);
 
+  function doAuth() {
+    if(!globals.socket) return;
+    var reg = {
+      gid: globals.gid,
+      role: globals.role
+    }
+    console.log(document.cookie);
+    var match = document.cookie.match(/connect.sid=s%3A([^;.]*)/);
+    if(match.length == 2) {
+      reg.cookie = unescape(match[1]);
+    }
+    globals.socket.emit('auth', reg);
+  }
+
   function init() {
     globals.board = new Board(document.getElementById('board'));
     globals.board.draw();
+    globals.socket = io.connect('{{{ socketHost }}}');
+    globals.gid = window.location.pathname.replace(/.*\//, '');
+    globals.role = globals.role || 's';
+    globals.socket.on('move', function(data) { globals.board.doMove(data); });
+
+    doAuth();
+  }
+
+  function sendMove(move) {
+    globals.socket.emit('move', move);
   }
 </script>

@@ -7,7 +7,7 @@ var util = require('util');
 var mu = exports.mu = require('mu2');
 var app = exports.app = express();
 var config = exports.config = require('./config');
-var WebSocket = exports.WebSocket = require('websocket');
+exports.SocketIO = require('socket.io');
 
 app.use(express.static(__dirname + '/static'));
 app.use(express.bodyParser());
