@@ -127,6 +127,21 @@ Board.prototype.draw = function() {
       board = this.board,
       config = this.config;
 
+  // Make canvas responsive (to resizes)
+  // At least on my browser at the time of writing, it improves performance
+  // to not assign to ctx.canvas.width/height if we dont have to
+  if(ctx.canvas.width != $('#contentContainer').width()) {
+  //TODO: uh this has at least 2 lines that are unimportant
+  //      need to make it scale down and not get blurry, fix later
+    var wid = $('#contentContainer').width();
+    ctx.canvas.style.width = wid;
+    ctx.canvas.style.height = wid;
+    canvas.style.width = wid;
+    canvas.style.height = wid;
+    ctx.canvas.width = wid;
+    ctx.canvas.height = wid;
+  }
+
   ctx.fillStyle = config.bgColour;
   ctx.rect(0, 0, canvas.width, canvas.height);
   ctx.fill();
