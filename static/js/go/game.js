@@ -185,3 +185,92 @@ Board.prototype.doMove = function(move) {
   this.board[move.r*this.config.numColumns + move.c] = move.role;
   this.draw();
 }
+
+
+
+/**********/
+
+function loginUI2() {
+  $('#whiteBtn').html(server.game.white.uid == server.user.uid ? 'Me' : server.game.white.name);
+  $('#blackBtn').html(server.game.black.uid == server.user.uid ? 'Me' : server.game.black.name);
+  globals.role = server.game.white.uid == server.user.uid ? 'w' :
+                 server.game.black.uid == server.user.uid ? 'b' : 's';
+  installPlayerPopovers();
+  doAuth();
+}
+
+function logoutUI2() {
+  $('#whiteBtn').html(server.game.white.name);
+  $('#blackBtn').html(server.game.black.name);
+  globals.role = 's';
+  doAuth();
+  installPlayerPopovers();
+}
+
+function makePlayerTable(user) {
+  return '<table class="playerStats">' +
+           '<tr><td>Rank</td><td>' + user.go.egf + '</td></tr>' +
+           '<tr><td>Games played</td><td>' + user.go.gamesPlayed + '</td></tr>' +
+         '</table>';
+}
+
+function installPlayerPopovers() {
+  $('#whiteBtn').popover({
+    title: server.game.white.name,
+    content: makePlayerTable(server.game.white),
+    html: true,
+    trigger: 'hover',
+    placement: 'bottom'
+  });
+  $('#blackBtn').popover({
+    title: server.game.black.name,
+    content: makePlayerTable(server.game.black),
+    html: true,
+    trigger: 'hover',
+    placement: 'bottom'
+  });
+}
+
+
+/****************/
+
+
+
+$(document).ready(init);
+
+function doAuth() {
+  if(!globals.socket) return;
+  var reg = {
+    gid: globals.gid,
+    role: globals.role
+  }
+  var match = document.cookie.match(/connect.sid=s%3A([^;.]*)/);
+  if(match.length == 2) {
+    reg.cookie = unescape(match[1]);
+  }
+  globals.socket.emit('auth', reg);
+}
+
+
+function init() {
+  globals.board = new Board(document.getElementById('board'));
+  globals.board.draw();
+  globals.socket = io.connect(server.socketHost);
+  globals.gid = window.location.pathname.replace(/.*\//, '');
+  globals.role = globals.role || 's';
+  globals.socket.on('move', function(data) {
+    globals.turn = data.role == 'w' ? 'b' : 'w';
+    globals.board.doMove(data);
+  });
+  globals.socket.on('authok', function(data) {
+    globals.board.board = data.board;
+    globals.turn = data.turn;
+    globals.board.draw();
+  });
+  doAuth();
+}
+
+function sendMove(move) {
+  globals.turn = globals.turn == 'w' ? 'b' : 'w';
+  globals.socket.emit('move', move);
+}
