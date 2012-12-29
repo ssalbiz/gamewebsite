@@ -21,14 +21,22 @@ function handleAuth(socket) { return function(data) {
     return;
   }
 
-  server.redis.mget(['sess:' + data.cookie, 'go:game:' + data.gid], function(e, results) {
+  server.redis.get('sess:' + data.cookie, function(e, session) {
     if(e) {
-      socket.emit('unexpected', 'auth failure: redis GET sess:' + data.cookie + ' --> e=' + e + ', reply=' + results);
-    } else if(results[1] == null) {
-      socket.disconnect('no such gid');
-    } else {
-      var session = results[0] == null ? null : JSON.parse(results[0]);
-      var game = JSON.parse(results[1]);
+      socket.disconnect('auth failure: redis GET sess:' + data.cookie + ' --> e=' + e + ', reply=' + session);
+      return;
+    }
+    if(session != null) session = JSON.parse(session);
+    server.redis.hget('go:games', data.gid, function(e, game) {
+      if(e) {
+        socket.disconnect('auth failure: redis HGET go:games ' + data.gid + ' --> e=' + e + ', reply=' + session);
+        return;
+      } else if(game == null) {
+        socket.disconnect('bad gid during auth');
+        return;
+      }
+      game = JSON.parse(game);
+
       if((data.role == 'w' && (session == null || game.white.uid != session.user.uid)) ||
          (data.role == 'b' && (session == null || game.black.uid != session.user.uid))) {
          socket.disconnect('invalid role');
@@ -41,7 +49,7 @@ function handleAuth(socket) { return function(data) {
       });
       socket.join('go:game:' + data.gid);
       socket.set('gid', data.gid);
-    }
+    });
   });
 };}
 
@@ -55,7 +63,7 @@ function handleMove(socket) { return function(data) {
       if(e || typeof gid != 'string') {
         socket.disconnect('socket is missing gid - what?');
       } else {
-        server.redis.get('go:game:' + gid, function(e, game) {
+        server.redis.hget('go:games', gid, function(e, game) {
           if(e) {
             socket.disconnect('couldn;t get game - what?');
           } else if(game == null) {
@@ -64,7 +72,7 @@ function handleMove(socket) { return function(data) {
             game = JSON.parse(game);
             game.board[19*data.r + data.c] = data.role; // TODO lol
             game.turn = data.role == 'w' ? 'b': 'w'; // TODO lolx2
-            server.writeDB('go:game:' + gid, game);
+            server.writeHDB('go:games', gid, game);
             socket.broadcast.to('go:game:' + gid).emit('move', data);
           }
         });

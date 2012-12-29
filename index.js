@@ -28,6 +28,10 @@ exports.writeDB = function(key, val) {
   redis.set(key, JSON.stringify(val)); // TODO callback
 };
 
+exports.writeHDB = function(hash, key, val) {
+  redis.hset(hash, key, JSON.stringify(val)); // TODO callback
+};
+
 exports.unexpected = function(res, action, msg) {
   console.log('Unexpected: ' + action + ': ' + msg);
   res.writeHead(500, { 'Location': '/bad?action=' + encodeURIComponent(action) + '&msg=' + encodeURIComponent(msg) });

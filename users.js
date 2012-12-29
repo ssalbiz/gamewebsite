@@ -18,8 +18,8 @@ exports.newUser = function(email, res, req) {
       };
       res.writeHead(201, { 'Content-Type': 'application/json' });
       console.log('New user: ' + JSON.stringify(user));
-      server.writeDB('user:' + uid, user);
-      server.writeDB('uid:' + email, uid);
+      server.writeHDB('users', uid, user);
+      server.writeHDB('UIDs', email, uid);
       req.session.user = user;
 
       res.end(JSON.stringify({ new: true, user: user}));
@@ -28,9 +28,9 @@ exports.newUser = function(email, res, req) {
 };
 
 exports.getUserFromEmail = function(email, callback) {
-  server.redis.get('uid:' + email, function(e, uid) {
+  server.redis.hget('UIDs', email, function(e, uid) {
     if(e) {
-      callback({ message: 'redis failure: GET uid:' + email + ' -> e=' + JSON.stringify(e) + ', reply=' + JSON.stringify(uid) }, undefined);
+      callback({ message: 'redis failure: HGET UIDs ' + email + ' -> e=' + JSON.stringify(e) + ', reply=' + JSON.stringify(uid) }, undefined);
     } else {
       exports.getUserFromUID(uid, callback);
     }
@@ -38,9 +38,9 @@ exports.getUserFromEmail = function(email, callback) {
 }
 
 exports.getUserFromUID = function(uid, callback) {
-  server.redis.get('user:' + uid, function(e, user) {
+  server.redis.hget('users', uid, function(e, user) {
     if(e) {
-      callback({message: 'redis failure: GET user:' + uid + ' --> e=' + JSON.stringify(e) + ' reply=' + JSON.stringify(user) }, undefined);
+      callback({message: 'redis failure: HGET users ' + uid + ' --> e=' + JSON.stringify(e) + ' reply=' + JSON.stringify(user) }, undefined);
     } else {
       callback(undefined, JSON.parse(user));
     }
@@ -77,7 +77,7 @@ function updateProfileHandler(req, res) {
 
   var name = req.param('name') || req.session.user.name;
   req.session.user.name = name.replace(/[^a-zA-Z0-9\-\_\ ]/g, '').slice(0, 32);
-  server.writeDB('user:' + req.session.user.uid, req.session.user);
+  server.writeHDB('users', req.session.user.uid, req.session.user);
 
   res.writeHead(202, { 'Content-Type': 'text/plain' });
   res.end();

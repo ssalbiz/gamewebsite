@@ -17,7 +17,7 @@ function createGame(white, black, res) {
     if(e) {
       server.unexpected(res, 'creating game', 'could not get a new gid:' + e.message);
     } else {
-      server.writeDB('go:game:' + gid, {
+      server.writeHDB('go:games', gid, {
         white: white,
         board: new Array(19*19 + 1).join(' ').split(''),
         turn: 'b',
@@ -60,14 +60,14 @@ function setupPlayer(user) {
       egf: 0,
       gamesPlayed: 0
     };
-    server.writeDB('user:' + user.uid, user);
+    server.writeHDB('users', user.uid, user);
   }
 }
 function fetchGameHandler(req, res) {
   var gid = req.params[0];
-  server.redis.get('go:game:' + gid, function(e, game) {
+  server.redis.hget('go:games', gid, function(e, game) {
     if(e) {
-      server.unexpected(res, 'fetching game', e.message);
+      server.unexpected(res, 'fetching game', e.message); // should actually 404 TODO
       return;
     } else if(game == null) {
       server.showPage(req, res, {
@@ -76,7 +76,7 @@ function fetchGameHandler(req, res) {
       });
     } else {
       game = JSON.parse(game);
-      server.redis.mget(['user:' + game['uidWhite'], 'user:' + game.uidBlack], function(e, players) {
+      server.redis.hmget('users', [game.uidWhite, game.uidBlack], function(e, players) {
         if(e) {
           server.unexpected(res, 'fetching game participants', e.message);
         } else {
