@@ -19,6 +19,8 @@ function createGame(white, black, res) {
     } else {
       server.writeDB('go:game:' + gid, {
         white: white,
+        board: new Array(19*19 + 1).join(' ').split(''),
+        turn: 'b',
         black: black
       });
       res.writeHead(302, {'Location': '/go/' + gid});
@@ -81,7 +83,10 @@ function fetchGameHandler(req, res) {
           var me = req.session.user || { name: '', uid: -1 };
           players[0] = JSON.parse(players[0]);
           players[1] = JSON.parse(players[1]);
-          var page = server.mu.compileAndRender('go/game.tmpl', { game: JSON.stringify(game) });
+          var page = server.mu.compileAndRender('go/game.tmpl', {
+            socketHost: 'http://' + server.config.host + ':' + server.config.go.port,
+            game: JSON.stringify(game)
+          });
 
           var contents = ''
           page.on('data', function(data) { contents += data; });
