@@ -54,11 +54,37 @@ exports.hset = function(hash, field, value) {
   redis.hset(hash, field, serialize(value)); // TODO callback?
 };
 
-exports.hmget = function(hash, fields, value, callback) {
+exports.hmget = function(hash, fields, callback) {
   // TODO missing safety checks
   if(typeof fields != 'array') throw 'TODO hmget'; // TODO error
   redis.hmget(hash, fields, function(e, values) {
     if(e) redisError('HMGET ' + field, e, values);
-    else  callback(results.map(JSON.parse));
+    else  callback(values.map(JSON.parse));
   });
-}
+};
+
+exports.hdel = function(hash, field) {
+  if(!safe(hash) || !safe(field)) throw 'TODO hdel'; // TODO error
+  redis.hdel(hash, field); //TODO: callback?
+};
+
+exports.hgetall = function(hash, callback) {
+  if (!safe(hash)) throw 'TODO hgetall';
+  redis.hgetall(hash, function(e, values) {
+    if(e) redisError('HGETALL ' + field, e, values);
+    else  callback(values);
+  });
+};
+
+exports.lrange = function(list, start, stop, callback) {
+  if(typeof start != number || typeof stop != number) throw 'TODO lrange';
+  redis.lrange(list, start, stop, function(e, values) {
+    if(e) redisError('LRANGE ' + list, e, values);
+    else callback(values.map(JSON.parse));
+  });
+};
+
+exports.rpush = function(list, item) {
+  if(!safe(item)) throw 'TODO rpush';
+  redis.rpush(list, item); /// TODO callback?
+};
