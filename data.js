@@ -38,7 +38,7 @@ exports.incr = function(key, callback) {
     if(e) redisError('INCR + ' + key, e, value);
     else  callback(value);
   });
-}
+};
 
 /* Hashes */
 exports.hget = function(hash, field, callback) {
@@ -61,4 +61,4 @@ exports.hmget = function(hash, fields, value, callback) {
     if(e) redisError('HMGET ' + field, e, values);
     else  callback(results.map(JSON.parse));
   });
-}
+};

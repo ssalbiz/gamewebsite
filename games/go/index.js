@@ -5,6 +5,8 @@
 var server = require('../../');
 var core = require('./core').init();
 
+exports.engine = require('./engine');
+
 exports.init = function(www) {
   www.get(/^\/go\/creategame\/([0-9]+)$/, createGameHandler);
   www.get(/^\/go\/([0-9]+)$/, fetchGameHandler);
@@ -69,6 +71,7 @@ function fetchGameHandler(req, res) {
 }
 
 /* Back end */
+
 function setupPlayer(user) {
   if(typeof user.go == 'undefined') {
     user.go = {

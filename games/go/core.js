@@ -1,9 +1,16 @@
 var server = require('../../');
 var io = server.SocketIO.listen(server.config.go.port);
-var redisClient = server.redis.createClient();
 
 exports.init = function() {
+  var redisClient = server.redis.createClient();
   redisClient.select(server.config.go.socketio.sessionDB);
+  io.configure(function() {
+    io.set('log level', server.config.go.socketio.logLevel);
+    io.enable('browser client minification'); // why isnt this the default?
+    io.set('store', new server.SocketRedisStore({
+      redisClient: redisClient
+    }));
+  });
 }
 
 io.sockets.on('connection', function(socket) {
@@ -13,13 +20,6 @@ io.sockets.on('connection', function(socket) {
   socket.on('disconnect', handleDisconnect(socket));
 });
 
-io.configure(function() {
-  io.set('log level', server.config.go.socketio.logLevel);
-  io.enable('browser client minification'); // why isnt this the default?
-  io.set('store', new server.SocketRedisStore({
-    redisClient: redisClient
-  }));
-});
 
 function handleDisconnect(socket) { return function(data) {
   socket.get('gid', function(e, gid) {
@@ -114,3 +114,42 @@ function handleMove(socket) { return function(data) {
     });
   });
 };}
+
+function expectedScore(rk1, rk2) {
+  // it is weird how his system doesn't sum expectation to 1, but shrug?
+  if(rk1 - rk2 >= 390)      return 1.0;
+  else if(rk2 - rk1 >= 460) return 0.0;
+  else                      return (rk1 - rk2 + 460)/850;
+}
+
+function updatePlayer(user, opponentRank, score) {
+  if(user.go.played < 4) {
+    var sofar = user.go.rank*user.go.played + opponentRank;
+    if(score == 1.0)      sofar += 200;
+    else if(score == 0.0) sofar -= 200;
+    users.go.rank = sofar/(user.go.played + 1);
+  } else {
+    var K = 24.0;
+    var expected = expectedScore(users.white.rank, opponentRank);
+    user.go.rank += K*(score - expected);
+  }
+
+  users.go.played += 1;
+  users.go.won += score == 1.0;
+  users.go.tied += score == 0.5;
+  users.go.lost += score == 0.0;
+
+  server.users.save(user);
+}
+
+function finishGame(game, callback) {
+  var results = server.go.engine.score(game);
+
+  var bRank = game.black.go.rank;
+  var wRank = game.white.go.rank;
+  updatePlayer(game.white, bRank, results.wScore);
+  updatePlayer(game.black, wRank, results.bScore);
+
+  game.results = results;
+  callback(game);
+}
