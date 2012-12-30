@@ -1,37 +1,37 @@
 #!/usr/bin/env node
-var express = require('express');
-var https = exports.https = require('https');
-var RedisStore = require('connect-redis')(express);
-var redis = exports.redis = require('redis').createClient();
-var util = require('util');
-var mu = exports.mu = require('mu2');
-var app = exports.app = express();
-var config = exports.config = require('./config');
-exports.SocketIO = require('socket.io');
 
-app.use(express.static(__dirname + '/static'));
-app.use(express.bodyParser());
-app.use(express.cookieParser());
-app.use(express.session({
-  secret: config.cookieSecret,
+server = exports;
+
+/* Exported modules (all modules required elsewhere go here) */
+server.https            = require('https');
+server.redis            = require('redis');
+server.SocketIO         = require('socket.io');
+server.config           = require('./config');
+server.mu               = require('mu2');
+server.SocketRedisStore = require('socket.io/lib/stores/redis');
+
+/* Configure express */
+var express      = require('express'),
+    www          = express(),
+    redisExpress = server.redis.createClient(),
+    util         = require('util');
+
+redisExpress.select(server.config.sessionDB);
+
+www.use(express.static(__dirname + '/static'));
+www.use(express.bodyParser());
+www.use(express.cookieParser());
+www.use(express.session({
+  secret: exports.config.cookieSecret,
   cookie: { httpOnly: false },
-  store: new RedisStore({
-    host: config.redis.host,
-    port: config.redis.port,
-    client: redis
+  store: new (require('connect-redis')(express))({
+    host: server.config.redis.host,
+    port: server.config.redis.port,
+    client: redisExpress
   })
 }));
 
-mu.root = __dirname + '/templates';
-
-exports.writeDB = function(key, val) {
-  redis.set(key, JSON.stringify(val)); // TODO callback
-};
-
-exports.writeHDB = function(hash, key, val) {
-  redis.hset(hash, key, JSON.stringify(val)); // TODO callback
-};
-
+// TODO not good
 exports.unexpected = function(res, action, msg) {
   console.log('Unexpected: ' + action + ': ' + msg);
   res.writeHead(500, { 'Location': '/bad?action=' + encodeURIComponent(action) + '&msg=' + encodeURIComponent(msg) });
@@ -42,37 +42,63 @@ exports.originAllowed = function(origin) {
   return true; // TODO
 };
 
+/* Page rendering */
+server.mu.root = __dirname + '/templates';
 exports.showPage = function(req, res, options) {
   options.user = req.session.user ? JSON.stringify(req.session.user) : 'null';
-  var stream = mu.compileAndRender('main.tmpl', options);
+  var stream = server.mu.compileAndRender('main.tmpl', options);
   util.pump(stream, res);
 };
 
-app.get('/', function(req, res) {
+/* Main routes */
+www.get('/', function(req, res) {
   exports.showPage(req, res, {
     title: 'Main page',
     contents: '<div class="hero-unit"><h1>Hello, world!</h1><p>This is the main page. There isnt much here yet!</div>'
   });
 });
 
-app.get('/bad', function(req, res) {
+// TODO error
+www.get('/bad', function(req, res) {
   res.writeHead(500, {'Content-Type': 'text/plain'});
   res.end('bad thing happened!');
 });
 
-app.get('/special', function(req, res) {
+www.get('/special', function(req, res) {
   exports.unexpected(res, 'special sauce', 'lol bad thing');
 });
 
+/* Sessions */
+exports.session = {};
+
+exports.session.get = function(sessionID, callback) {
+  redisExpress.get('sess:' + sessionID, function(e, session) {
+    if(e) {
+      throw { // TODO
+        location: 'server.getSession',
+        args: arguments,
+        msg: 'GET ' + sessionID + ' failed.'
+      };
+    }
+    callback(JSON.parse(session));
+  });
+};
+
+exports.session.save = function(sessionID, session, callback) {
+  redisExpress.set('sess:' + sessionID, JSON.stringify(session), callback);
+}
+
 /* Load components */
-exports.auth = require('./auth');
-exports.users = require('./users');
-exports.go = require('./games/go/');
+server.data = require('./data');
+server.auth = require('./auth');
+server.users = require('./users');
+server.go = require('./games/go/');
 
-exports.auth.init();
-exports.users.init();
-exports.go.init();
+server.data.init();
+server.auth.init(www);
+server.users.init(www);
+server.go.init(www);
 
-app.listen(config.port);
-
-console.log('Listening on port ' + config.port);
+/* Start server */
+www.listen(server.config.port);
+console.log('Listening on port ' + server.config.port);

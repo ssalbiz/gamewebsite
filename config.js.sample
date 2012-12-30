@@ -2,11 +2,17 @@ module.exports = {
   host: 'csc.uwaterloo.ca',
   cookieSecret: 'lalalalala',
   port: 54322,
+  dataDB: 1,
+  sessionDB: 2,
   redis: {
     host: 'localhost',
-    port: 6379 // Must match the one in redis/redis.conf !!! TODO: read it from there instead
+    port: 6379
   },
   go: {
+    socketio: {
+      sessionDB: 3,
+      logLevel: 3,
+    },
     port: 54323
-  }
+  },
 };

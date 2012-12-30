@@ -311,6 +311,10 @@ function init() {
     globals.board.draw();
     playerBadgeUI();
   });
+  globals.socket.on('authnotice', function(data) {
+    console.log('authnotice:');
+    console.log(data);
+  });
   doAuth();
 }
 
