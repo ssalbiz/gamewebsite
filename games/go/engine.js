@@ -26,12 +26,61 @@ engine.verifyMove = function(game, move) {
     return {
       result: 'fail',
       reason: 'pieces cannot be placed on top of other pieces'
-    }
+    };
+  }
+
+  if(!engine.countLiberties(game, move)) {
+    return {
+      result: 'fail',
+      reason: 'pieces cannot be placed in a suicide position'
+    };
   }
 
   return {
     result: 'ok'
   };
+};
+
+engine.countLiberties = function(game, move) {
+  var unvisited = [move.r*19 + move.c];
+  var visited = {};
+  var liberties = 0;
+  while(unvisited.length>0) {
+    next = unvisited.shift();
+    // EAST
+    if((next%19)-1 > 0) {
+      if(game.board[next-1] == ' ') {
+        liberties++;
+      } else if(game.board[next-1] == move.role && !visited[next-1]) {
+        unvisited.push(next-1);
+      }
+    }
+    // WEST
+    if((next%19)+1 < 19) {
+      if(game.board[next+1] == ' ') {
+        liberties++;
+      } else if(game.board[next+1] == move.role && !visited[next+1]) {
+        unvisited.push(next+1);
+      }
+    }
+    // SOUTH
+    if((next/19)+1 < 19) {
+      if(game.board[next+19] == ' ') {
+        liberties++;
+      } else if(game.board[next+19] == move.role && !visited[next+19]) {
+        unvisited.push(next+19);
+      }
+    }
+    // NORTH
+    if((next/19)-1 < 19) {
+      if(game.board[next-19] == ' ') {
+        liberties++;
+      } else if(game.board[next-19] == move.role && !visited[next-19]) {
+        unvisited.push(next-19);
+      }
+    }
+  }
+  return liberties;
 };
 
 engine.getPiece = function(game, r, c) {

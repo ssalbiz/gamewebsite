@@ -1,11 +1,10 @@
 <script>
-  function loginUI2() {
-    $('#whiteBtn').html('Play');
-  }
-
-  function logoutUI2() {
-    $('#whiteBtn').html('Login to play');
-    $('whiteBtn').unbind('click', function() { console.log('unbound'); });
+  function subLoginUI() {
+    if (globals.user) {
+      $('#whiteBtn').html('Play');
+    } else {
+      $('#whiteBtn').html('Login to play');
+    }
   }
 
   function makeMatchRequest(matchid) {
