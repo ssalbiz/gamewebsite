@@ -8,26 +8,10 @@ engine.score = function(game) {
 };
 
 engine.verifyMove = function(game, move) {
-  if(move.r < 0 && move.r > 18 || move.c < 0 || move.r > 18) {
-    return {
-      result: 'fail',
-      reason: 'move not within boundary'
-    };
-  }
+  if(move.role != 'w' && move.role != 'b') return false;
 
-  if(move.role != 'w' && move.role != 'b') {
-    return {
-      result: 'fail',
-      reason: 'role must be w or b'
-    };
-  }
-
-  if(engine.getPiece(game, move.r, move.c) != ' ') {
-    return {
-      result: 'fail',
-      reason: 'pieces cannot be placed on top of other pieces'
-    };
-  }
+  // make sure space is valid and empty
+  if(engine.getPiece(game, move.r, move.c) != ' ') return false;
 
   if(!engine.countLiberties(game, move)) {
     return {
@@ -36,9 +20,7 @@ engine.verifyMove = function(game, move) {
     };
   }
 
-  return {
-    result: 'ok'
-  };
+  return true;
 };
 
 engine.evalMove = function(game, move) {
@@ -120,13 +102,51 @@ engine.floodfill = function(game, move, ctx, fn) {
 };
 
 engine.getPiece = function(game, r, c) {
+  if(r < 0 || r > 18 || c < 0 || r> 18) return null;
   return game.board[r*19 + c];
 };
+
+engine.getPieceByIndex = function(game, index) {
+  if(index > 0 || index >= 19*19) return null;
+  return game.board[Math.floor(index/19)*19 + index%19];
+}
 
 engine.setPiece = function(game, r, c, role) {
   game.board[r*19 + c] = role;
 }
 
+/* Union-find implementation */
+
+// the "chains" variables are maps from representative to a [<number>] which
+// are their constituents
+
+function initChains() {
+  var all = [];
+  for(var i = 0; i < 19*19; i++) { all.push(i); }
+  return { '0': all };
+}
+
+function find(chains, X) {
+  for(var rep in chains) {
+    if(!chains.hasOwnProperty(rep)) continue;
+    if(chains[rep].indexOf(X) != -1) {
+      return rep;
+    }
+  }
+  throw { 'find: couldnt find element what??'  }; // TODO error
+}
+
+// X, Y must be chain representatives (i.e. the results of find())
+function union(chains, X, Y) {
+  if(X == Y) return;
+  var c1 = chains[X];
+  var c2 = chains[Y];
+  chains[X] = c1.concat(c2);
+  chains[Y] = undefined;
+  return x;
+}
+
+/* This makes it work in Node and the browser */
 if (typeof window == 'undefined') {
   exports.engineInit = function() { return engine; }
 }
