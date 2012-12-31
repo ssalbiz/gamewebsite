@@ -6,14 +6,14 @@ exports.init = function() {
 };
 
 function safe(x) {
-  return typeof x == 'string' || typeof x == 'number' || typeof x == 'boolean';
+  return typeof x == 'string' || typeof x == 'number';
 }
 
 function serialize(x) {
-  if(x == null || x == undefined) throw 'tried to store ' + x + ' in the db' // TODO error
-  if(typeof x == 'function') throw 'tried to store a function in the db' // TODO error
+  if(x == null || x == undefined)                 throw 'tried to store ' + x + ' in the db' // TODO error
+  if(typeof x == 'function')                      throw 'tried to store a function in the db' // TODO error
   if(typeof x == 'array' || typeof x == 'object') return JSON.stringify(x);
-  return x;
+                                                  return x;
 }
 
 function redisError(str, e, value) {
@@ -38,7 +38,7 @@ exports.incr = function(key, callback) {
     if(e) redisError('INCR + ' + key, e, value);
     else  callback(value);
   });
-}
+};
 
 /* Hashes */
 exports.hget = function(hash, field, callback) {

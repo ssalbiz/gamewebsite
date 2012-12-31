@@ -1,13 +1,14 @@
-<script src="/js/go/game.js"></script>
+<script src="/js/go/engine.js"></script>
+<script src="/js/go/go.ui.js"></script>
+<script src="/js/go/go.js"></script>
 <script src="{{{ socketHost }}}/socket.io/socket.io.js"></script>
+<link rel="stylesheet" href="/css/go/game.css">
 
 <script>
-var server = server || {}
-server.socketHost = '{{{ socketHost }}}';
-server.game = {{{ game }}}
+var globals = globals || {}
+globals._go_socketHost = '{{{ socketHost }}}';
+globals._go_game = {{{ game }}}
 </script>
-
-<link rel="stylesheet" href="/css/go/game.css">
 
 <ul class="inline full">
   <li><button class="btn btn-white" type="button" id="whiteBtn"></button></li>
