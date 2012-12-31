@@ -1,0 +1,50 @@
+<script>
+  function loginUI2() {
+    $('#whiteBtn').html('Play');
+  }
+
+  function logoutUI2() {
+    $('#whiteBtn').html('Login to play');
+    $('whiteBtn').unbind('click', function() { console.log('unbound'); });
+  }
+
+  function makeMatchRequest(matchid) {
+    $.ajax({
+      type: 'POST',
+      url: '/go/match',
+      data: { matchid: matchid },
+      success: function(res, status, xhr) {
+        console.log(xhr.responseText);
+        var resp = JSON.parse( xhr.responseText );
+        if (resp.gid !== null && resp.gid !== undefined) {
+          window.location.replace('/go/' + resp.gid);
+          return;
+        } 
+        window.setTimeout(function() {makeMatchRequest(resp.matchid);}, 2000);
+      }
+    });
+  }
+
+  function installLobbyHandlers() {
+    var active = true;
+    $('#whiteBtn').click(function() {
+      if (!active) return;
+      active = false;
+      makeMatchRequest(-1);
+    });
+  }
+</script>
+
+<ul class="inline full">
+  <li><button class="btn btn-white" type="button" id="whiteBtn"></button></li>
+  <li><input type="range" max="50" min="0" step="5" value = "10" /></li>
+</ul>
+
+<script>
+  $(document).ready(init);
+
+  function init() {
+    installLobbyHandlers();
+    console.log("init");
+  }
+</script>
