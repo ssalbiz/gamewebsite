@@ -51,12 +51,15 @@ engine.suicideCheck = function(game, move) {
   var N = getNeighbours(toIndex(move.r, move.c));
   var NP = N.map(function(x) { return engine.getPieceByIndex(game, x); });
 
+  console.log(N);
+  console.log(NP);
   for(var i = 0; i < N.length; i++) {
     if(NP[i] == ' ') {
       return false;
     } if(NP[i] == null) {
     } else if(NP[i] == move.role) {
       var numLiberties = getLiberties(game.chains, find(game.chains, N[i])).length;
+      console.log(getLiberties(game.chains, find(game.chains, N[i])));
       if(numLiberties > 1) return false;
     } else {
       var numLiberties = getLiberties(game.chains, find(game.chains, N[i])).length;
@@ -175,25 +178,11 @@ function toIndex(r, c) {
   return r*19 + c;
 }
 
-function concatSorted(X, Y) {
-  var ans = [];
-  var i = 0, j = 0;
-  var A = X;
-  var B = Y;
-  while(i < A.length) {
-    if(A[i] <= B[j]) {
-      ans.push(A[i]);
-      i += 1;
-    } else {
-      var tmp = A;
-      A = B;
-      B = tmp;
-      tmp = i;
-      i = j;
-      j = tmp;
-    }
+function concatObjects(X, Y) {
+  for(var x in Y) {
+    if(!Y.hasOwnProperty(x)) continue;
+    X[x] = true;
   }
-  return ans.concat(B.slice(j, B.length));
 }
 
 function getNeighbours(index) {
@@ -220,8 +209,11 @@ function getNeighbours(index) {
 function addChain(chains, X, libs) {
   chains[X] = {
     contents: [X],
-    liberties: libs.sort(function(a,b) { return a - b; })
+    liberties: {}
   };
+  for(var i = 0; i < libs.length; i++) {
+    chains[X].liberties[libs[i]] = true;
+  }
 }
 
 function find(chains, X) {
@@ -239,11 +231,11 @@ function find(chains, X) {
 function union(chains, X, Y) {
   if(typeof chains[X] == 'undefined') throw 'tried to union non-rep with something'; // TODO error
   if(typeof chains[Y] == 'undefined') throw 'tried to union something with non-rep'; // TODO error
-  if(X == Y) return;
+  if(X == Y) return X;
   var c1 = chains[X];
   var c2 = chains[Y];
   chains[X].contents = c1.contents.concat(c2.contents);
-  chains[X].liberties = concatSorted(chains[X].liberties, chains[Y].liberties);
+  concatObjects(chains[X].liberties, chains[Y].liberties);
   delete chains[Y];
   return X;
 }
@@ -255,32 +247,23 @@ function getMembers(chains, X) {
 
 function getLiberties(chains, X) {
   if(typeof chains[X] == 'undefined') throw 'tried to getLiberties on a non-rep'; // TODO error
-  return chains[X].liberties;
+  var ans = [];
+  for(var x in chains[X].liberties) {
+    if(!chains[X].liberties.hasOwnProperty(x)) continue;
+    ans.push(x);
+  }
+  return ans;
 }
 
 function addLibertyToChain(chains, X, index) {
   console.log('=== adding liberty ' + index + ' to ' + X);
   if(typeof chains[X] == 'undefined') throw 'tried to add a liberty to a non-rep';
-  var libs = chains[X].liberties;
-  for(var i = 0; i < libs.length; i++) {
-    if(index < libs[i]) {
-      chains[X].liberties.splice(i, 0, index);
-      return;
-    }
-  }
-  chains[X].liberties.push(index);
+  chains[X].liberties[index] = true;
 }
-
-// Array Remove - By John Resig (MIT Licensed)
-Array.prototype.remove = function(from, to) {
-  var rest = this.slice((to || from) + 1 || this.length);
-  this.length = from < 0 ? this.length + from : from;
-  return this.push.apply(this, rest);
-};
 
 function removeLibertyFromChain(chains, X, index) {
   console.log('== in removeLibertyFromChain, removing liberty ' + index + ' from rep ' + X);
-  chains[X].liberties.remove(chains[X].liberties.indexOf(index));
+  delete chains[X].liberties[index]
 }
 
 /* This makes it work in Node and the browser */

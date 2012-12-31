@@ -1,0 +1,2 @@
+- as white, clicked in a spot that captured some black but my white piece disappeared
+  - should be impossible for a piece you place to suicide, somehow that constraint has leaked
