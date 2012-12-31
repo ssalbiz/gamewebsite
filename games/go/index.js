@@ -23,12 +23,13 @@ function gameMatchingHandler(req, res) {
     return;
   }
   server.go.match.pending(function(matches) {
+    // NOTE to future self: there are concurrency difficulties here that will
+    //                      need to be sorted out later.
     if(+req.body.matchid == -1) {
-      if (matches) {
+      if(matches) {
         for (var i in matches) {
           if (!matches.hasOwnProperty(i)) continue;
           //TODO: game constraint checking
-          matches[i] = JSON.parse(matches[i]);
           if(matches[i].taken || matches[i].player == req.session.user.uid) continue;
           // pull out of queue.
           matches[i].taken = true;

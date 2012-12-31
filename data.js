@@ -72,19 +72,26 @@ exports.hgetall = function(hash, callback) {
   if (!safe(hash)) throw 'TODO hgetall';
   redis.hgetall(hash, function(e, values) {
     if(e) redisError('HGETALL ' + field, e, values);
-    else  callback(values);
+    else {
+      var ans = {};
+      for(var key in values) {
+        if(values.hasOwnProperty(key)) ans[key] = JSON.parse(values[key]);
+      }
+      callback(ans);
+    }
   });
 };
 
+/* Lists */
 exports.lrange = function(list, start, stop, callback) {
   if(typeof start != number || typeof stop != number) throw 'TODO lrange';
   redis.lrange(list, start, stop, function(e, values) {
     if(e) redisError('LRANGE ' + list, e, values);
-    else callback(values.map(JSON.parse));
+    else  callback(values.map(JSON.parse));
   });
 };
 
 exports.rpush = function(list, item) {
-  if(!safe(item)) throw 'TODO rpush';
-  redis.rpush(list, item); /// TODO callback?
+  if(!safe(list)) throw 'TODO rpush';
+  redis.rpush(list, serialize(item)); /// TODO callback?
 };
