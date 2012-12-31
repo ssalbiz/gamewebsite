@@ -75,8 +75,11 @@ function fetchGameHandler(req, res) {
 function setupPlayer(user) {
   if(typeof user.go == 'undefined') {
     user.go = {
-      egf: 0,
-      gamesPlayed: 0
+      rank: 0,
+      played: 0,
+      won: 0,
+      tied: 0,
+      lost: 0
     };
     server.users.save(user);
   }

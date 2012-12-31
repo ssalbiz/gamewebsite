@@ -44,7 +44,7 @@ exports.new = function(email, callback) {
     var user = {
       email: email,
       uid: uid,
-      name: ''
+      name: 'New user'
     };
     console.log('=== new user: ' + email);
 

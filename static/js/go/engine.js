@@ -1,0 +1,1 @@
+../../../games/go/engine.js

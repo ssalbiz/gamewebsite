@@ -68,23 +68,11 @@ function handleAuth(socket) { return function(data) {
         return;
       }
 
-      if((data.role == 'w' && (session == null || uid != game.white.uid)) ||
-         (data.role == 'b' && (session == null || uid != game.black.uid))) {
-         socket.disconnect('invalid role');
-         return;
-      }
-
-      socket.emit('authok', {
-        board: game.board,
-        turn: game.turn
-      });
+      socket.emit('authok', { game: game });
 
       socket.join('go:game:' + data.gid);
 
-      socket.broadcast.to('go:game:' + data.gid).emit('authnotice', {
-        uid: uid? uid : 'anon',
-        connected: true
-      });
+      sendAuthNotice(socket, data.gid, uid, true);
     });
   });
 };}
