@@ -9,7 +9,7 @@ On first install:
 
 Running the server:
 
-* To start redis, `./redis/start`.
-* To start redis with a clean db, `./redis/start clean`
-* To stop redis, `./redis/stop`
+* To start redis, `./redis/ctl start`.
+* To start redis with a clean db, `./redis/ctl start clean`
+* To stop redis, `./redis/ctl stop`
 * To run the server, `./index.js`

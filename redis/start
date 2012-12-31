@@ -1,8 +1,0 @@
-#!/bin/bash
-cd "$(dirname "$0")"
-if [ "$1" = "clean" ]
-then
-  make clean
-fi
-killall -q redis-server
-redis-server redis.conf &

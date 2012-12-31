@@ -1,0 +1,19 @@
+#!/bin/bash
+cd "$(dirname "$0")"
+
+if [ "$1" == "start" ]; then
+  killall -q redis-server
+  redis-server redis.conf &
+elif [ "$1" == "stop" ]; then
+  killall -q redis-server
+else
+  echo -e "usage:\n\tctl start [clean]\n\tctl stop [clean]"
+  exit
+fi
+
+if [ "$2" == "clean" ]; then
+  sleep 1 # uhhhhh lol
+  rm -f appendonly.aof
+  rm -f dump.rdb
+  rm -f redis.log
+fi
