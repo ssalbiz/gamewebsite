@@ -41,46 +41,82 @@ engine.verifyMove = function(game, move) {
   };
 };
 
+engine.evalMove = function(game, move) {
+  // count liberties of opposing stones in NSEW adj and remove the chains if necessary.
+  var opp = move.role == 'w' ? 'b':'w';
+  if(move.r > 0 && game.board[(move.r-1)*19+move.c] == opp &&
+      !engine.countLiberties(game, {r:move.r-1, c:move.c, role:opp})) {
+    engine.removeChain(game, {r:move.r-1, c:move.c, role:opp});
+  }
+  if(move.c > 0 && game.board[(move.r)*19+move.c-1] == opp &&
+      !engine.countLiberties(game, {r:move.r, c:move.c-1, role:opp})) {
+    engine.removeChain(game, {r:move.r, c:move.c-1, role:opp});
+  }
+  if(move.r+1 < 19 && game.board[(move.r+1)*19+move.c] == opp &&
+      !engine.countLiberties(game, {r:move.r+1, c:move.c, role:opp})) {
+    engine.removeChain(game, {r:move.r+1, c:move.c, role:opp});
+  }
+  if(move.c+1 > 19 && game.board[(move.r)*19+move.c+1] == opp &&
+      !engine.countLiberties(game, {r:move.r, c:move.c+1, role:opp})) {
+    engine.removeChain(game, {r:move.r, c:move.c+1, role:opp});
+  }
+  return;
+};
+
 engine.countLiberties = function(game, move) {
+  var context = {liberties:0};
+  engine.floodfill(game, move, context, function(game, ctx, pos) {
+    if(game.board[pos] == ' ') {
+      ctx.liberties++;
+    }
+  });
+  return context.liberties;
+};
+
+engine.removeChain = function(game, move) {
+  game.board[move.r*19+move.c] = ' ';
+  engine.floodfill(game, move, {}, function(game, ctx, pos) {
+    if(game.board[pos] == move.role) {
+      game.board[pos] = ' ';
+    }
+  });
+};
+
+engine.floodfill = function(game, move, ctx, fn) {
   var unvisited = [move.r*19 + move.c];
   var visited = {};
-  var liberties = 0;
   while(unvisited.length>0) {
     next = unvisited.shift();
+    visited[next] = 1;
     // EAST
     if((next%19)-1 > 0) {
-      if(game.board[next-1] == ' ') {
-        liberties++;
-      } else if(game.board[next-1] == move.role && !visited[next-1]) {
+      if(game.board[next-1] == move.role && !visited[next-1]) {
         unvisited.push(next-1);
       }
+      fn(game, ctx, next-1);
     }
     // WEST
     if((next%19)+1 < 19) {
-      if(game.board[next+1] == ' ') {
-        liberties++;
-      } else if(game.board[next+1] == move.role && !visited[next+1]) {
+      if(game.board[next+1] == move.role && !visited[next+1]) {
         unvisited.push(next+1);
       }
+      fn(game, ctx, next+1);
     }
     // SOUTH
     if((next/19)+1 < 19) {
-      if(game.board[next+19] == ' ') {
-        liberties++;
-      } else if(game.board[next+19] == move.role && !visited[next+19]) {
+      if(game.board[next+19] == move.role && !visited[next+19]) {
         unvisited.push(next+19);
       }
+      fn(game, ctx, next+19);
     }
     // NORTH
     if((next/19)-1 < 19) {
-      if(game.board[next-19] == ' ') {
-        liberties++;
-      } else if(game.board[next-19] == move.role && !visited[next-19]) {
+      if(game.board[next-19] == move.role && !visited[next-19]) {
         unvisited.push(next-19);
       }
+      fn(game, ctx, next-19);
     }
   }
-  return liberties;
 };
 
 engine.getPiece = function(game, r, c) {
@@ -91,6 +127,6 @@ engine.setPiece = function(game, r, c, role) {
   game.board[r*19 + c] = role;
 }
 
-if(typeof window == 'undefined') {
-  exports = engine;
+if (typeof window == 'undefined') {
+  exports.engineInit = function() { return engine; }
 }

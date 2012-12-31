@@ -94,10 +94,16 @@ function handleMove(socket) { return function(data) {
           socket.disconnect('game was null - what?');
           return;
         }
-        game.board[19*data.r + data.c] = data.role; // TODO lol
-        game.turn = data.role == 'w' ? 'b': 'w'; // TODO lolx2
-        server.go.game.save(game);
-        socket.broadcast.to('go:game:' + gid).emit('move', data);
+        if (game.turn == data.role) {
+          var res = server.go.engine.verifyMove(game, data);
+          if (res.result == 'ok') {
+            game.turn = data.role == 'w' ? 'b': 'w';
+            server.go.engine.setPiece(game, data.r, data.c, data.role);
+            server.go.engine.evalMove(game, data);
+            server.go.game.save(game);
+            socket.broadcast.to('go:game:' + gid).emit('move', data);
+          }
+        }
       });
     });
   });

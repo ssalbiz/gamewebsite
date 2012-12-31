@@ -155,6 +155,7 @@ Go.prototype.draw = function() {
 Go.prototype.doMove = function(move) {
   if(this.game == null) return;
   engine.setPiece(this.game, move.r, move.c, move.role);
+  engine.evalMove(this.game, move);
   this.draw();
 }
 
