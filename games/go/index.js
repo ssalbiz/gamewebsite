@@ -5,7 +5,7 @@
 var server = require('../../');
 var core = require('./core').init();
 
-exports.engine = require('./engine');
+exports.engine = require('./engine').engineInit();
 
 exports.init = function(www) {
   www.get(/^\/go\/creategame\/([0-9]+)$/, createGameHandler);
