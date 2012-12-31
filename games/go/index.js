@@ -162,13 +162,10 @@ exports.game.new = function(white, black, callback) {
   setupPlayer(white);
   setupPlayer(black);
   server.data.incr('go:maxgid', function(gid) {
-    var game = {
-      gid: gid,
-      white: white,
-      black: black,
-      board: new Array(19*19 + 1).join(' ').split(''),
-      turn: 'b',
-    };
+    var game = server.go.engine.newGame();
+    game.gid = gid;
+    game.white = white;
+    game.black = black;
     server.data.hset('go:games', gid, game);
     callback(game);
   });

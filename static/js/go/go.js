@@ -50,11 +50,10 @@ Go.prototype.onClick = function(e) {
 
   var move = {r: p.r, c: p.c, role: this.role };
   if(this.game.turn == this.role) {
-    var res = engine.verifyMove(this.game, move);
-    if(res.result == 'ok') {
+    if(engine.verifyMove(this.game, move)) {
       this.game.turn = this.game.turn == 'w' ? 'b' : 'w';
-      this.socket.emit('move', move);
       this.doMove(move);
+      this.socket.emit('move', move);
       playerBadgeUI();
     }
   }

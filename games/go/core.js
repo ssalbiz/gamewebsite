@@ -94,14 +94,16 @@ function handleMove(socket) { return function(data) {
           socket.disconnect('game was null - what?');
           return;
         }
-        if (game.turn == data.role) {
-          var res = server.go.engine.verifyMove(game, data);
-          if (res.result == 'ok') {
+        if(game.turn == data.role) {
+          if(server.go.engine.verifyMove(game, data)) {
             game.turn = data.role == 'w' ? 'b': 'w';
             server.go.engine.setPiece(game, data.r, data.c, data.role);
             server.go.engine.evalMove(game, data);
             server.go.game.save(game);
             socket.broadcast.to('go:game:' + gid).emit('move', data);
+          } else {
+            socket.disconnect('bad move!');
+            // TODO: shouldn't disconnect, blah blah
           }
         }
       });

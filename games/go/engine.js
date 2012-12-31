@@ -11,96 +11,154 @@ engine.score = function(game) {
   };
 };
 
+engine.newGame = function() {
+  var game = {
+    board: [],
+    emptyPieces: [],
+    chains: {},
+    turn: 'b',
+  };
+  for(var i = 0; i < 19*19; i++) {
+    game.board.push(' ');
+    game.emptyPieces.push(i);
+  }
+  return game;
+};
+
 engine.verifyMove = function(game, move) {
-  if(move.role != 'w' && move.role != 'b') return false;
+  if(move.role != 'w' && move.role != 'b') {
+    console.log('* disallowed move due to bad role');
+    return false;
+  }
 
   // make sure space is valid and empty
-  if(engine.getPiece(game, move.r, move.c) != ' ') return false;
+  if(engine.getPiece(game, move.r, move.c) != ' ') {
+    console.log('* disallowed move due to invalid location');
+    return false;
+  }
 
-  if(engine.suicideCheck(game, move)) return false;
+  if(engine.suicideCheck(game, move)) {
+    console.log('* disallowed suicide move');
+    return false;
+  }
 
+  console.log('* move permitted');
   return true;
 };
 
 // returns true if this move would suicide
 engine.suicideCheck = function(game, move) {
   var N = getNeighbours(toIndex(move.r, move.c));
-  var NP = neighbours.map(engine.getPieceByIndex);
+  var NP = N.map(function(x) { return engine.getPieceByIndex(game, x); });
 
-  if(N[0] == ' ' || N[1] == ' ' || N[2] == ' ' || N[3] == ' ')
-    return false;
-  if(NP[0] != move.role && NP[1] != move.role && NP[2] != move.role && NP[3] != move.role)
-    return true;
+  for(var i = 0; i < N.length; i++) {
+    if(NP[i] == ' ') {
+      return false;
+    } if(NP[i] == null) {
+    } else if(NP[i] == move.role) {
+      var numLiberties = getLiberties(game.chains, find(game.chains, N[i])).length;
+      if(numLiberties > 1) return false;
+    } else {
+      var numLiberties = getLiberties(game.chains, find(game.chains, N[i])).length;
+      if(numLiberties == 1) return false;
+    }
 
-  for(var X in N) {
-    if(typeof X != 'number') continue;
-
-    if(engine.getPieceByIndex(X) != move.role) continue;
-    if(getLiberties(game.chains, X).length == 1) return true;
   }
 
-  return false;
+  return true;
 };
 
-engine.applyMove = function(game, move) {
-  var N = getNeighbours(toIndex(move.r, move.c));
-
-  var libs = [];
-  for(var X in N) {
-    if(typeof X != 'number') continue;
-
-    if(engine.getPieceByIndex(X) == ' ') libs.push(X);
-  }
-
+engine.evalMove = function(game, move) {
   var index = toIndex(move.r, move.c);
   var rep = index;
 
-  // add piece to the board
-  var idx = game.emptyPieces.indexOf(X);
-  game.emptyPieces.slice(idx, 1); // remove it from emptyPieces
-  addChain(game.chains, index, liberties);
-  engine.setPieceByIndex(game, index);
+  var N = getNeighbours(index);
+  var NP = N.map(function(x) { return engine.getPieceByIndex(game, x); });
+  var NR = [null, null, null, null];
 
-  // update chains
-  for(var X in N) {
-    if(typeof X != 'number') continue;
+  console.log('=====================================');
+  console.log(' a move of ' + move.role + ' at ' + move.r + ', ' + move.c + ' (index = ' + index + ')');
 
-    removeLiberty(game.chains, X, index);
-    rep = union(game.chains, rep, find(game.chains, X));
+  var libs = [];
+  console.log('= getting liberties of ' + index);
+  for(var i = 0; i < N.length; i++) {
+    if(engine.getPieceByIndex(game, N[i]) == ' ') libs.push(N[i]);
   }
 
-  // remove any dead enemy pieces
-  for(var X in N) {
-    if(typeof X != 'number') continue;
+  // add piece to the board
+  var idx = game.emptyPieces.indexOf(N[i]);
+  console.log('= removing piece from emptyPieces');
+  game.emptyPieces.slice(idx, 1); // remove it from emptyPieces
+  console.log('= adding a new chain at ' + index + ' with libs=' + JSON.stringify(libs));
+  addChain(game.chains, index, libs);
+  console.log('= setting piece on board to ' + move.role);
+  engine.setPieceByIndex(game, index, move.role);
 
-    var role = engine.getPieceByIndex(X);
-    if(role == null || role == move.role) continue;
-    if(getLiberties(game.chains, X).length != 0) continue;
-    var dead = getMembers(game.chains, X);
-    for(var i = 0; i < dead.length; i++) {
+  console.log('');
+
+  // update chains
+  for(var i = 0 ; i < N.length; i++) {
+    if(NP[i] == ' ' || NP[i] == null) continue;
+    console.log('= updating neighbour chain at ' + N[i]);
+    console.log('= getting rep for neighbour ' + N[i] + ' which is ' + NP[i]);
+    NR[i] = find(game.chains, N[i]);
+    console.log('=* rep is ' + NR[i]);
+    console.log('= removing liberty ' + index + ' from rep ' + NR[i]);
+    removeLibertyFromChain(game.chains, NR[i], index);
+    if(NP[i] == move.role) {
+      console.log('= unioning ' + rep + ' and  ' + NR[i]);
+      rep = union(game.chains, rep, NR[i]);
+      NR[i] = rep;
+      console.log('=* new rep is ' + rep);
+    }
+    console.log('');
+  }
+
+  // remove any dead enemy chains
+  for(var i = 0; i < N.length; i++) {
+    if(NP[i] == null || NP[i] == move.role || NP[i] == ' ') continue;
+    console.log('');
+    console.log('= checking if neighbour ' + N[i] + ' is a dead chain (it is ' + NP[i] + ')');
+    console.log('= checking to see if it has 0 liberties...');
+    if(getLiberties(game.chains, NR[i]).length != 0) continue;
+    console.log('= it has no liberties! kill some stuff');
+    console.log('= fetching members of this chain');
+    var dead = getMembers(game.chains, NR[i]);
+    console.log('= there are ' + dead.length + ' of them.');
+    console.log('= killing:');
+    for(var j = 0; j < dead.length; j++) {
+      console.log('== killing piece ' + dead[j]);
+      console.log('== removing it from the board');
+      engine.setPieceByIndex(game, dead[j], ' ');
       // add this piece as a liberty to all its neighbours
-      var neigbours = getNeighbours(dead[i]);
-      for(var X in neighbours) {
-        if(typeof X != 'number') continue;
-
-        var r = engine.getPieceByIndex(X);
-        if(r != null && r != deadRole) {
-          addLibertyToChain(game.chains, X, dead[i]);
+      console.log('== getting its neighbours');
+      var deadN = getNeighbours(dead[j]);
+      for(var k = 0; k < deadN.length; k++) {
+        var r = engine.getPieceByIndex(game, deadN[k]);
+        if(r != null && r != NP[i] && r != ' ') { // if this piece neighbours something outside of its chain
+          console.log('== piece ' + deadN[k] + ' belongs to the enemy, so give them this as a liberty');
+          var otherR = find(game.chains, deadN[k]);
+          console.log('== it has rep ' + otherR);
+          console.log('== adding liberty ' + dead[j] + ' to ' + otherR);
+          addLibertyToChain(game.chains, otherR, dead[j]);
         }
       }
     }
     game.emptyPieces = game.emptyPieces.concat(dead);
   }
+
+  console.log('= done');
+  console.log('==========================');
 };
 
 engine.getPiece = function(game, r, c) {
-  if(r < 0 || r > 18 || c < 0 || r> 18) return null;
+  if(r < 0 || r > 18 || c < 0 || c > 18) return null;
   return game.board[r*19 + c];
 };
 
 engine.getPieceByIndex = function(game, index) {
-  if(index > 0 || index >= 19*19) return null;
-  return game.board[Math.floor(index/19)*19 + index%19];
+  if(index == null || index < 0 || index >= 19*19) return null;
+  return game.board[index];
 };
 
 engine.setPiece = function(game, r, c, role) {
@@ -108,10 +166,12 @@ engine.setPiece = function(game, r, c, role) {
 };
 
 engine.setPieceByIndex = function(game, index, role) {
-  game.board[Math.floor(index/19)*19 + index%19];
+  if(index == null) throw 'tried to setPieceByIndex(..., null, ...'; // TODO error
+  game.board[index] = role;
 };
 
 function toIndex(r, c) {
+  if(r < 0 || r > 18 || c < 0 || c > 18) return null;
   return r*19 + c;
 }
 
@@ -127,7 +187,7 @@ function concatSorted(X, Y) {
     } else {
       var tmp = A;
       A = B;
-      B = C;
+      B = tmp;
       tmp = i;
       i = j;
       j = tmp;
@@ -137,8 +197,9 @@ function concatSorted(X, Y) {
 }
 
 function getNeighbours(index) {
-  var r = Math.floor(index/19)*19,
+  var r = Math.floor(index/19),
       c = index % 19;
+  console.log('loc: r=' + r + ' c=' + c);
   return [
     toIndex(r, c + 1),
     toIndex(r, c - 1),
@@ -152,16 +213,12 @@ function getNeighbours(index) {
 // the "chains" variables are maps from representative to a [<number>] which
 // are their constituents. The empty pieces are kept in game.emptyPieces because
 // they don't behave exactly like a regular chain
-function initChains(game) {
-  game.chains = {};
-  game.emptyPieces = [];
-  for(var i = 0; i < 19*19; i++) emptyChain.push(i);
-}
+// see also: constructor engine.newGame initializes chains and emptyPieces
 
 // called to add a single element as a chain when the piece gets
 // placed on the board
 function addChain(chains, X, libs) {
-  game.chains[X] = {
+  chains[X] = {
     contents: [X],
     liberties: libs.sort(function(a,b) { return a - b; })
   };
@@ -170,43 +227,63 @@ function addChain(chains, X, libs) {
 function find(chains, X) {
   for(var rep in chains) {
     if(!chains.hasOwnProperty(rep)) continue;
+    if(rep == X) return X;
     if(chains[rep].contents.indexOf(X) != -1) {
       return rep;
     }
   }
-  throw 'find: couldnt find element what??'; // TODO error
+  throw 'asked to find something that is not in a chain!'; // TODO error
 }
 
 // X, Y must be chain representatives (i.e. the results of find())
 function union(chains, X, Y) {
+  if(typeof chains[X] == 'undefined') throw 'tried to union non-rep with something'; // TODO error
+  if(typeof chains[Y] == 'undefined') throw 'tried to union something with non-rep'; // TODO error
   if(X == Y) return;
   var c1 = chains[X];
   var c2 = chains[Y];
   chains[X].contents = c1.contents.concat(c2.contents);
   chains[X].liberties = concatSorted(chains[X].liberties, chains[Y].liberties);
-  chains[Y] = undefined;
+  delete chains[Y];
   return X;
 }
 
 function getMembers(chains, X) {
+  if(typeof chains[X] == 'undefined') throw 'tried to getMembers on a non-rep'; // TODO error
   return chains[X].contents;
 }
 
 function getLiberties(chains, X) {
+  if(typeof chains[X] == 'undefined') throw 'tried to getLiberties on a non-rep'; // TODO error
   return chains[X].liberties;
 }
 
-function addLibertiesToChain(chains, X, index) {
+function addLibertyToChain(chains, X, index) {
+  console.log('=== adding liberty ' + index + ' to ' + X);
+  if(typeof chains[X] == 'undefined') throw 'tried to add a liberty to a non-rep';
   var libs = chains[X].liberties;
   for(var i = 0; i < libs.length; i++) {
     if(index < libs[i]) {
       chains[X].liberties.splice(i, 0, index);
+      return;
     }
   }
-  chains[X].push(index);
+  chains[X].liberties.push(index);
+}
+
+// Array Remove - By John Resig (MIT Licensed)
+Array.prototype.remove = function(from, to) {
+  var rest = this.slice((to || from) + 1 || this.length);
+  this.length = from < 0 ? this.length + from : from;
+  return this.push.apply(this, rest);
+};
+
+function removeLibertyFromChain(chains, X, index) {
+  console.log('== in removeLibertyFromChain, removing liberty ' + index + ' from rep ' + X);
+  chains[X].liberties.remove(chains[X].liberties.indexOf(index));
 }
 
 /* This makes it work in Node and the browser */
-if (typeof window == 'undefined') {
+if(typeof window == 'undefined') {
   exports.engineInit = function() { return engine; }
 }
