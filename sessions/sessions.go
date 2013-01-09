@@ -7,7 +7,7 @@ import (
   "net/url"
   "log"
 
-  "redigo/redis"
+  "github.com/garyburd/redigo/redis"
 )
 //TODO: abstract into general interface + impl
 

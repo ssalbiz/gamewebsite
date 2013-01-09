@@ -8,7 +8,7 @@ import (
   "net/http"
   "strconv"
   "strings"
-  "redigo/redis"
+  "github.com/garyburd/redigo/redis"
 )
 
 func registerUserHandlers() {

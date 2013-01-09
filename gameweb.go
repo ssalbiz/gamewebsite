@@ -8,7 +8,7 @@ import (
   "path"
   "strconv"
 
-  "redigo/redis"
+  "github.com/garyburd/redigo/redis"
   "gamewebsite/sessions"
 )
 
