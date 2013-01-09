@@ -9,7 +9,7 @@ import (
   "strconv"
 
   "redigo/redis"
-  "gameweb/sessions"
+  "gamewebsite/sessions"
 )
 
 type Session map[string]interface{}
